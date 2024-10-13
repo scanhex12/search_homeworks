@@ -92,7 +92,6 @@ func (procesor *PreProcessor) LemmatizeAndRemoveStopWords(text string) ([]string
     return result, nil
 }
 
-// Стемминг с удалением стоп-слов
 func (procesor *PreProcessor) StemAndRemoveStopWords(text string) ([]string, error) {
     stemmedWords, err := procesor.Stem(text)
     if err != nil {
