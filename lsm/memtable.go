@@ -39,7 +39,7 @@ func (m *Memtable) LoadBlock(startIndex int) ([]KeyValue, error) {
 	
 	scanner := bufio.NewScanner(file)
 	var data []KeyValue
-	currentIndex := 0
+	currentIndex := startIndex
 
 	for scanner.Scan() {
 		if currentIndex >= startIndex && currentIndex < startIndex+m.blockSize {
