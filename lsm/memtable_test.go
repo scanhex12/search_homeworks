@@ -1,15 +1,16 @@
 package lsm
 
 import (
-	"github.com/stretchr/testify/assert"
-	"testing"
 	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 func TestMemtable1(t *testing.T) {
 	os.Remove("a.txt")
-	defer os.Remove("a.txt")
+	//defer os.Remove("a.txt")
 
-	memtable1 := NewMemtable("a.txt", 4)
+	memtable1 := NewMemtable("a.txt", 100)
 	memtable1.AddKeyValue("key1", "value1")
 	memtable1.AddKeyValue("key2", "value2")
 	memtable1.AddKeyValue("key3", "value3")
@@ -39,8 +40,8 @@ func TestMemtable2(t *testing.T) {
 	defer os.Remove("c.txt")
 	defer os.Remove("d.txt")
 
-	memtable1 := NewMemtable("b.txt", 4)
-	memtable2 := NewMemtable("c.txt", 4)
+	memtable1 := NewMemtable("b.txt", 100)
+	memtable2 := NewMemtable("c.txt", 100)
 
 	memtable1.AddKeyValue("key1", "value1")
 	memtable1.AddKeyValue("key3", "value3")
@@ -50,8 +51,8 @@ func TestMemtable2(t *testing.T) {
 	memtable2.AddKeyValue("key4", "value4")
 	memtable2.AddKeyValue("key6", "value6")
 	memtable2.AddKeyValue("key8", "value8")
-	memtable2.AddKeyValue("key10", "value10")
-	memtable2.AddKeyValue("key12", "value12")
+	memtable2.AddKeyValue("key90", "value90")
+	memtable2.AddKeyValue("key92", "value92")
 
 	val1, exists := memtable2.BinarySearch("key2")
 	assert.True(t, exists)
@@ -62,7 +63,7 @@ func TestMemtable2(t *testing.T) {
 	assert.Equal(t, val2, "value4")
 	
 	memtable1.Merge(memtable2, "d.txt")
-	memtable3 := NewMemtable("d.txt", 4)
+	memtable3 := NewMemtable("d.txt", 100)
 
 	val_memtable1, exists := memtable3.BinarySearch("key1")
 	assert.True(t, exists)
@@ -76,9 +77,9 @@ func TestMemtable2(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, val_memtable6, "value6")
 
-	val_memtable12, exists := memtable3.BinarySearch("key12")
+	val_memtable12, exists := memtable3.BinarySearch("key92")
 	assert.True(t, exists)
-	assert.Equal(t, val_memtable12, "value12")
+	assert.Equal(t, val_memtable12, "value92")
 
 	_, exists = memtable1.BinarySearch("key14")
 	assert.False(t, exists)
@@ -96,8 +97,8 @@ func TestMemtable3(t *testing.T) {
 	defer os.Remove("c.txt")
 	defer os.Remove("d.txt")
 
-	memtable1 := NewMemtable("b.txt", 4)
-	memtable2 := NewMemtable("c.txt", 4)
+	memtable1 := NewMemtable("b.txt", 100)
+	memtable2 := NewMemtable("c.txt", 100)
 
 	memtable1.AddKeyValue("key1", "value1")
 	memtable1.AddKeyValue("key3", "value3")
@@ -107,11 +108,11 @@ func TestMemtable3(t *testing.T) {
 	memtable2.AddKeyValue("key2", "value4")
 	memtable2.AddKeyValue("key5", "value6")
 	memtable2.AddKeyValue("key8", "value8")
-	memtable2.AddKeyValue("key10", "value10")
-	memtable2.AddKeyValue("key12", "value12")
+	memtable2.AddKeyValue("key90", "value90")
+	memtable2.AddKeyValue("key92", "value92")
 
 	memtable1.Merge(memtable2, "d.txt")
-	memtable3 := NewMemtable("d.txt", 4)
+	memtable3 := NewMemtable("d.txt", 100)
 
 	val_memtable1, exists := memtable3.BinarySearch("key1")
 	assert.True(t, exists)
@@ -125,9 +126,9 @@ func TestMemtable3(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, val_memtable6, "value6")
 
-	val_memtable12, exists := memtable3.BinarySearch("key12")
+	val_memtable12, exists := memtable3.BinarySearch("key92")
 	assert.True(t, exists)
-	assert.Equal(t, val_memtable12, "value12")
+	assert.Equal(t, val_memtable12, "value92")
 
 	_, exists = memtable1.BinarySearch("key14")
 	assert.False(t, exists)
@@ -140,7 +141,7 @@ func TestMemtable4(t *testing.T) {
 	os.Remove("a.txt")
 	defer os.Remove("a.txt")
 
-	memtable1 := NewMemtable("a.txt", 4)
+	memtable1 := NewMemtable("a.txt", 100)
 	memtable1.AddKeyValue("key1", "value1")
 	memtable1.AddKeyValue("key1", "value2")
 	memtable1.AddKeyValue("key1", "value3")

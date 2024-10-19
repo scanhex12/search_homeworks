@@ -7,15 +7,10 @@ import (
 )
 
 type PreProcessor struct {
-	stem_vocab map[string]string
 }
 
 func NewPreprocessor() *PreProcessor {
-	stem_vocab := make(map[string]string, 0)
-	for i := 0; i < len(StemVocabList); i++ {
-		stem_vocab[StemVocabList[i].in] = StemVocabList[i].out;
-	}
-	return &PreProcessor{stem_vocab: stem_vocab};
+	return &PreProcessor{};
 }
 
 type LemmatizeRequest struct {
@@ -92,6 +87,7 @@ func (procesor *PreProcessor) LemmatizeAndRemoveStopWords(text string) ([]string
     return result, nil
 }
 
+// Стемминг с удалением стоп-слов
 func (procesor *PreProcessor) StemAndRemoveStopWords(text string) ([]string, error) {
     stemmedWords, err := procesor.Stem(text)
     if err != nil {

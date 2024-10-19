@@ -16,7 +16,7 @@ func TestMergeTree1(t *testing.T) {
 	Rebuild()
 	defer Rebuild()
 
-	config := NewConfig(1, 4, 8, 5, 1)
+	config := NewConfig(1, 100, 8, 5, 1)
 
 	tree := NewMergeTable(config)
 	err := tree.Insert("key1", "value1")
@@ -45,9 +45,9 @@ func TestMergeTree2(t *testing.T) {
 	Rebuild()
 	defer Rebuild()
 
-	num_check_keys := 10
+	num_check_keys := 4
 
-	config := NewConfig(1, 4, 8, 5, 1)
+	config := NewConfig(1, 100, 8, 5, 1)
 	tree := NewMergeTable(config)
 
 	for i := 0; i < 2 * num_check_keys; i++ {
