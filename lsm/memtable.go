@@ -31,7 +31,12 @@ func (m *Memtable) LoadBlock(startIndex int) ([]KeyValue, error) {
 		return nil, err
 	}
 	defer file.Close()
-
+	offset := int64(startIndex)
+	_, err = file.Seek(offset, 0)
+	if err != nil {
+		return nil, err
+	}
+	
 	scanner := bufio.NewScanner(file)
 	var data []KeyValue
 	currentIndex := 0
