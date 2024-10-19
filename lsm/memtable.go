@@ -68,7 +68,7 @@ func (m *Memtable) BinarySearch(key string) (string, bool) {
 	for {
 		block, err := m.LoadBlock(startIndex)
 		if err != nil {
-			fmt.Println("Ошибка загрузки блока:", err)
+			fmt.Println("Error of uploading block:", err)
 			return "", false
 		}
 
