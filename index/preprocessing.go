@@ -1,78 +1,84 @@
 package index
 
 import (
-    "bytes"
-    "encoding/json"
-    "net/http"
+    "github.com/jdkato/prose/v2"
+    "github.com/kljensen/snowball"
+    "strings"
 )
+
+type StopWordsResponse map[string]bool
 
 type PreProcessor struct {
 }
 
 func NewPreprocessor() *PreProcessor {
-	return &PreProcessor{};
+    return &PreProcessor{}
 }
 
-type LemmatizeRequest struct {
-    Text string `json:"text"`
-}
-
-func (procesor *PreProcessor) Lemmatize(words string) ([]string, error) {
-	requestBody, _ := json.Marshal(LemmatizeRequest{Text: words})
-    resp, err := http.Post("http://localhost:5000/lemmatize", "application/json", bytes.NewBuffer(requestBody))
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    var result []string
-    json.NewDecoder(resp.Body).Decode(&result)
-    return result, nil
-}
-
-type StemRequest struct {
-    Text string `json:"text"`
-}
-
-func (procesor *PreProcessor) Stem(text string) ([]string, error) {
-    requestBody, _ := json.Marshal(StemRequest{Text: text})
-    resp, err := http.Post("http://localhost:5000/stem", "application/json", bytes.NewBuffer(requestBody))
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    var result []string
-    json.NewDecoder(resp.Body).Decode(&result)
-    return result, nil
-}
-
-type StopWordsRequest struct {
-    Text string `json:"text"`
-}
-
-type StopWordsResponse map[string]bool
-
-func (procesor *PreProcessor) ClassifyStopWords(text string) (StopWordsResponse, error) {
-    requestBody, _ := json.Marshal(StopWordsRequest{Text: text})
-    resp, err := http.Post("http://localhost:5000/classify_stopwords", "application/json", bytes.NewBuffer(requestBody))
-    if err != nil {
-        return nil, err
-    }
-    defer resp.Body.Close()
-
-    var result StopWordsResponse
-    json.NewDecoder(resp.Body).Decode(&result)
-    return result, nil
-}
-
-func (procesor *PreProcessor) LemmatizeAndRemoveStopWords(text string) ([]string, error) {
-    lemmatizedWords, err := procesor.Lemmatize(text)
+func (processor *PreProcessor) Lemmatize(text string) ([]string, error) {
+    doc, err := prose.NewDocument(text)
     if err != nil {
         return nil, err
     }
 
-    stopWords, err := procesor.ClassifyStopWords(text)
+    var lemmatizedWords []string
+    for _, token := range doc.Tokens() {
+        word := strings.ToLower(token.Text)
+        lemmatizedWords = append(lemmatizedWords, processor.lemmatizeSimple(word))
+    }
+
+    return lemmatizedWords, nil
+}
+
+// Пример простого подхода для английской лемматизации
+func (processor *PreProcessor) lemmatizeSimple(word string) string {
+    // Примеры замены окончаний
+    if strings.HasSuffix(word, "ing") {
+        return strings.TrimSuffix(word, "ing")
+    } else if strings.HasSuffix(word, "ed") {
+        return strings.TrimSuffix(word, "ed")
+    }
+    return word
+}
+
+func (processor *PreProcessor) Stem(text string) ([]string, error) {
+    words := strings.Fields(text)
+    var stemmedWords []string
+
+    for _, word := range words {
+        stemmedWord, err := snowball.Stem(word, "english", true)
+        if err != nil {
+            return nil, err
+        }
+        stemmedWords = append(stemmedWords, stemmedWord)
+    }
+
+    return stemmedWords, nil
+}
+
+func (processor *PreProcessor) ClassifyStopWords(text string) (StopWordsResponse, error) {
+    stopWords := map[string]bool{
+        "the": true, "is": true, "at": true, "which": true, "on": true,
+        // Дополните список нужными стоп-словами
+    }
+    words := strings.Fields(text)
+    response := make(StopWordsResponse)
+
+    for _, word := range words {
+        _, exists := stopWords[strings.ToLower(word)]
+        response[word] = exists
+    }
+
+    return response, nil
+}
+
+func (processor *PreProcessor) LemmatizeAndRemoveStopWords(text string) ([]string, error) {
+    lemmatizedWords, err := processor.Lemmatize(text)
+    if err != nil {
+        return nil, err
+    }
+
+    stopWords, err := processor.ClassifyStopWords(text)
     if err != nil {
         return nil, err
     }
@@ -87,14 +93,13 @@ func (procesor *PreProcessor) LemmatizeAndRemoveStopWords(text string) ([]string
     return result, nil
 }
 
-// Стемминг с удалением стоп-слов
-func (procesor *PreProcessor) StemAndRemoveStopWords(text string) ([]string, error) {
-    stemmedWords, err := procesor.Stem(text)
+func (processor *PreProcessor) StemAndRemoveStopWords(text string) ([]string, error) {
+    stemmedWords, err := processor.Stem(text)
     if err != nil {
         return nil, err
     }
 
-    stopWords, err := procesor.ClassifyStopWords(text)
+    stopWords, err := processor.ClassifyStopWords(text)
     if err != nil {
         return nil, err
     }

@@ -2,9 +2,9 @@ package lsm
 
 import (
 	"bufio"
-	//"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -25,74 +25,67 @@ func NewMemtable(filePath string, blockSize int) *Memtable {
 	}
 }
 
-func (m *Memtable) GetKeyValueStr(key, value string) string {
-	res := fmt.Sprintf("%s:%s", key, value)
-	for len(res) < m.blockSize - 1 {
-		res = fmt.Sprintf("%s^", res)
-	}
-	return fmt.Sprintf("%s\n", res)
-}
-
-func (m *Memtable) ParseStr(line string) KeyValue {
-	parts := strings.SplitN(line, ":", 2)
-	key := parts[0]
-	value := strings.SplitN(parts[1], "^", 2)
-	data := KeyValue{Key: key, Value: value[0]}
-	return data
-}
-
-func (m *Memtable) LoadBlock(startIndex int) (*KeyValue, error) {
+func (m *Memtable) LoadBlock(startIndex int) ([]KeyValue, error) {
 	file, err := os.Open(m.filePath)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	offset := int64(startIndex) * int64(m.blockSize)
-	_, err = file.Seek(offset, 0)
-	if err != nil {
-		return nil, err
-	}
 	scanner := bufio.NewScanner(file)
+	var data []KeyValue
+	currentIndex := 0
 
-	var data KeyValue
+	for scanner.Scan() {
+		if currentIndex >= startIndex && currentIndex < startIndex+m.blockSize {
+			line := scanner.Text()
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				data = append(data, KeyValue{Key: parts[0], Value: parts[1]})
+			}
+		}
+		currentIndex++
 
-	scanner.Scan()
-	line := scanner.Text()
-	if len(line) != m.blockSize - 1 {
-		return nil, nil
+		if currentIndex >= startIndex+m.blockSize {
+			break
+		}
 	}
-	data = m.ParseStr(line)
 
-	return &data, scanner.Err()
+	return data, scanner.Err()
 }
 
 func (m *Memtable) BinarySearch(key string) (string, bool) {
-	fileInfo, err := os.Stat(m.filePath)
-	if err != nil {
-		panic(err)
-	}
-	fileSize := fileInfo.Size()
-	result, found := "", false
-	left, right := int64(0), (fileSize/int64(m.blockSize))-1
+	blockSize := m.blockSize
+	startIndex := 0
+	var result string
+	found := false
 
-	for left <= right {
-		mid := left + (right-left)/2
-
-		block, err := m.LoadBlock(int(mid))
+	for {
+		block, err := m.LoadBlock(startIndex)
 		if err != nil {
-			panic(err)
+			fmt.Println("Ошибка загрузки блока:", err)
+			return "", false
 		}
-		key_mid, value_mid := block.Key, block.Value
-		if key_mid == key {
-			result = value_mid
+
+		if len(block) == 0 {
+			break
+		}
+
+		sort.Slice(block, func(i, j int) bool {
+			return block[i].Key < block[j].Key
+		})
+
+		index := sort.Search(len(block), func(i int) bool {
+			return block[i].Key >= key
+		})
+
+		for index < len(block) && block[index].Key == key {
+			result = block[index].Value
 			found = true
-			left = mid + 1
-		} else if key_mid < key {
-			left = mid + 1
-		} else {
-			right = mid - 1
+			index++
 		}
+
+		startIndex += blockSize
 	}
 
 	return result, found
@@ -113,7 +106,7 @@ func (m *Memtable) PrintFileContents() error {
 }
 
 func (m *Memtable) Merge(other *Memtable, outputFilePath string) error {
-	var block2 *KeyValue 
+	block2 := make([]KeyValue, 0)
 
 	i := 0
 	j := 0
@@ -135,33 +128,32 @@ func (m *Memtable) Merge(other *Memtable, outputFilePath string) error {
 			return err
 		}
 
-		if block1 == nil && block2 == nil {
+		if len(block1) == 0 && len(block2) == 0 {
 			break
 		}
-		
-		if block1 != nil && block2 != nil {
-			if block1.Key <= block2.Key {
-				writer.WriteString(m.GetKeyValueStr(block1.Key, block1.Value))
-				i += 1
-				block1 = nil
+
+		for len(block1) > 0 && len(block2) > 0 {
+			if block1[0].Key <= block2[0].Key {
+				writer.WriteString(fmt.Sprintf("%s:%s\n", block1[0].Key, block1[0].Value))
+				block1 = block1[1:]
 			} else {
-				writer.WriteString(m.GetKeyValueStr(block2.Key, block2.Value))
-				j += 1
-				block2 = nil
+				writer.WriteString(fmt.Sprintf("%s:%s\n", block2[0].Key, block2[0].Value))
+				block2 = block2[1:]
 			}
 		}
 
-		if block1 != nil {
-			writer.WriteString(m.GetKeyValueStr(block1.Key, block1.Value))
-			i += 1
-			block1 = nil
+		for len(block1) > 0 {
+			writer.WriteString(fmt.Sprintf("%s:%s\n", block1[0].Key, block1[0].Value))
+			block1 = block1[1:]
 		}
 
-		if block2 != nil {
-			writer.WriteString(m.GetKeyValueStr(block2.Key, block2.Value))
-			j += 1
-			block2 = nil
+		for len(block2) > 0 {
+			writer.WriteString(fmt.Sprintf("%s:%s\n", block2[0].Key, block2[0].Value))
+			block2 = block2[1:]
 		}
+
+		i += m.blockSize
+		j += other.blockSize 
 	}
 
 	writer.Flush() 
@@ -175,8 +167,7 @@ func (m *Memtable) AddKeyValue(key, value string) error {
 	}
 	defer file.Close()
 
-
-	_, err = file.WriteString(m.GetKeyValueStr(key, value))
+	_, err = file.WriteString(fmt.Sprintf("%s:%s\n", key, value))
 	if err != nil {
 		return err
 	}
