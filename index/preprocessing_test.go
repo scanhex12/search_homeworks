@@ -12,7 +12,7 @@ func TestLemmatize(t *testing.T) {
 	result, err := processor.Lemmatize("running better feet")
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result, []string{"runn", "better", "feet"})
+	assert.Equal(t, result, []string{"run", "good", "foot"})
 }
 
 func TestStemmer(t *testing.T) {
@@ -36,7 +36,7 @@ func TestLemProcessing(t *testing.T) {
 	result, err := processor.LemmatizeAndRemoveStopWords("the quick brown fox jumps")
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result, []string{"quick", "brown", "fox", "jumps"})
+	assert.Equal(t, result, []string{"quick", "brown", "fox", "jump"})
 }
 
 func TestStemProcessing(t *testing.T) {

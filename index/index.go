@@ -17,6 +17,12 @@ type IndexerConfig struct {
 	preproc_type PreprocessingType
 }
 
+func NewIndexConfig() *IndexerConfig {
+	return &IndexerConfig{
+		preproc_type : Stem,
+	}
+}
+
 type Indexer struct {
 	tree *lsm.MergeTree
 	preprocessor PreProcessor

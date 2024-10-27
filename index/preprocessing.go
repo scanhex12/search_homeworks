@@ -3,12 +3,15 @@ package index
 import (
     "github.com/jdkato/prose/v2"
     "github.com/kljensen/snowball"
+	"github.com/aaaton/golem/v4"
+	"github.com/aaaton/golem/v4/dicts/en"
     "strings"
 )
 
 type StopWordsResponse map[string]bool
 
 type PreProcessor struct {
+
 }
 
 func NewPreprocessor() *PreProcessor {
@@ -30,15 +33,13 @@ func (processor *PreProcessor) Lemmatize(text string) ([]string, error) {
     return lemmatizedWords, nil
 }
 
-// Пример простого подхода для английской лемматизации
 func (processor *PreProcessor) lemmatizeSimple(word string) string {
-    // Примеры замены окончаний
-    if strings.HasSuffix(word, "ing") {
-        return strings.TrimSuffix(word, "ing")
-    } else if strings.HasSuffix(word, "ed") {
-        return strings.TrimSuffix(word, "ed")
-    }
-    return word
+	lemmatizer, err := golem.New(en.New())
+	if err != nil {
+		panic(err)
+	}
+	res := lemmatizer.Lemma(word)
+    return res
 }
 
 func (processor *PreProcessor) Stem(text string) ([]string, error) {
@@ -59,7 +60,6 @@ func (processor *PreProcessor) Stem(text string) ([]string, error) {
 func (processor *PreProcessor) ClassifyStopWords(text string) (StopWordsResponse, error) {
     stopWords := map[string]bool{
         "the": true, "is": true, "at": true, "which": true, "on": true,
-        // Дополните список нужными стоп-словами
     }
     words := strings.Fields(text)
     response := make(StopWordsResponse)
