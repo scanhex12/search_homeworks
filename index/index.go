@@ -91,7 +91,6 @@ func (indexer *Indexer) AddBatchDocument(texts []string, index_docs []int) error
 		var processed_text []string
 		var err error
 
-		// Выбор метода обработки: стемминг или лемматизация
 		if indexer.indexer_config.preproc_type == Stem {
 			processed_text, err = indexer.preprocessor.StemAndRemoveStopWords(text)
 		} else {
@@ -101,7 +100,6 @@ func (indexer *Indexer) AddBatchDocument(texts []string, index_docs []int) error
 			return err
 		}
 
-		// Группировка слов и документов в битмапы
 		for _, word := range processed_text {
 			if _, exists := wordBitmaps[word]; !exists {
 				wordBitmaps[word] = roaring.NewBitmap()
@@ -110,7 +108,6 @@ func (indexer *Indexer) AddBatchDocument(texts []string, index_docs []int) error
 		}
 	}
 
-	// Обновление дерева одним проходом для всех слов
 	for word, newBitmap := range wordBitmaps {
 		val, contains := indexer.tree.Search(word)
 		var existingBitmap *roaring.Bitmap
