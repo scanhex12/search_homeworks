@@ -5,7 +5,6 @@ import (
 	"search/lsm"
 	"strconv"
 	"strings"
-
 	"github.com/RoaringBitmap/roaring"
 )
 
@@ -49,6 +48,7 @@ func (indexer *PatternIndex) InsertPatternDocuments(text string, index_doc int) 
 	for i := 0; i < len(prefixes); i++ {
 		indices[i] = index_doc
 	}
+
 	indexer.index.AddBatchDocument(prefixes, indices)
 	indexer.documents.Insert(strconv.Itoa(index_doc), text)
 }
@@ -74,7 +74,6 @@ func (indexer *PatternIndex) SearchByPattern(pattern string, limit int) ([]strin
 	lower_pattern := strings.ToLower(pattern)
 
 	important_words := GetImportantSubwordFromPattern(lower_pattern, limit)
-
 	bitmap := roaring.NewBitmap()
 	for _, word := range important_words {
 		cur_bitmap, err := indexer.index.GetMergedBitmapDocuments(word, limit)

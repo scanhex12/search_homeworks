@@ -43,9 +43,19 @@ func TestPatternIndex(t *testing.T) {
 	}
 
 	indexer := NewPatternIndex(indexer_config)
-	indexer.InsertPrefixDocuments("some strange text", 0)
-	indexer.InsertPrefixDocuments("another strange text", 1)
+	indexer.InsertPatternDocuments("some strange text", 0)
+	indexer.InsertPatternDocuments("another strange text", 1)
 	res, err := indexer.SearchByPattern("a*ther", 2)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, res, []string{"another strange text"})
+
+	res, err = indexer.SearchByPattern("*ther", 2)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res, []string{"another strange text"})
+
+	res, err = indexer.SearchByPattern("st*ge", 2)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res, []string{"some strange text", "another strange text"})
 }
+
+
